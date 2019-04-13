@@ -11,92 +11,142 @@ namespace Day6
     {
         private class Point
         {
-            public int xCoord;
-            public int yCoord;
-            public int distance;
-            public string id;
+            public readonly int x;
+            public readonly int y;
 
-            public Point(int x, int y, string id)
+            public readonly char id;
+
+            public Point(int x, int y, char id)
             {
-                xCoord = x;
-                yCoord = y;
+                this.x = x;
+                this.y = y;
                 this.id = id;
             }
-
         }
 
         static void Main(string[] args)
         {
             int maxX = 0, maxY = 0, minX = 0, minY = 0;
 
-            var points = new List<Point>();
-            var pointCount = new Dictionary<string, int>();
-            var c = 0;
+            var points = new Dictionary<Point, int>();
+            var c = 'A';
             using (var reader = new StreamReader("input.txt"))
             {
 
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    c++;
-
                     line = line.Replace(" ", string.Empty);
                     var coords = line.Split(',').ToList();
-                    var x = Convert.ToInt32(coords[0]);
-                    var y = Convert.ToInt32(coords[1]);
+                    var y = Convert.ToInt32(coords[0]);
+                    var x = Convert.ToInt32(coords[1]);
 
-                    maxX = Math.Max(maxX, x);
-                    minX = Math.Min(minX, x);
-                    maxY = Math.Max(maxY, y);
-                    minY = Math.Min(minY, y);
-
-                    points.Add(new Point(y, x, c.ToString()));
+                    points.Add(new Point(x, y, c), 0);
+                    c++;
                 }
             }
 
-            var grid = new Point[maxY + 1, maxX + 1];
+            minX = points.Keys.Min(k => k.x);
+            maxX = points.Keys.Max(k => k.x);
+            minY = points.Keys.Min(k => k.y);
+            maxY = points.Keys.Max(k => k.y);
 
-            foreach (var p in points)
+            
+            for(int i = 0; i <= maxX; i++)
             {
-                grid[p.xCoord, p.yCoord] = p;
-                pointCount.Add(p.id, 1);
-            }
-
-            for (int i = 0; i < maxY + 1; i++)
-            {
-                for (int j = 0; j < maxX + 1; j++)
+                for(int j = 0; j <= maxY; j++)
                 {
-                    if (grid[i, j] == null)
+                    var refPoint = new Point(i, j, '.');
+                    var d = 0;
+                    var p = ClosestPoint(points.Keys.ToList(), refPoint, out d);
+                    if(p != null)
                     {
-                        Console.Write(".");
+                        points[p]++;
+                        if(d == 0)
+                        {
+                            Console.Write(p.id);
+                        }
+                        else
+                        {
+                            // Console.Write('.');
+                            Console.Write(p.id.ToString().ToLower());
+                        }
                     }
                     else
                     {
-                        Console.Write(grid[i, j].id);
+                        Console.Write('.');
                     }
                 }
                 Console.WriteLine();
             }
 
-            //Remove all keys w/ infinite bounds
-            //for (int i = 0; i < maxX + 1; i++)
-            //{
-            //    pointCount.Remove(grid[i, 0].id);
-            //    pointCount.Remove(grid[i, maxY].id);
-            //}
+            Console.WriteLine("------------------------");
 
-            //for (int i = 0; i < maxY + 1; i++)
-            //{
-            //    pointCount.Remove(grid[0, i].id);
-            //    pointCount.Remove(grid[maxX, i].id);
-            //}
+            foreach(var p in points)
+            {
+                Console.WriteLine(string.Format("{0}: {1}", p.Key.id, p.Value));
+            }
 
-            Console.WriteLine(pointCount.Values.ToList().Max());
-            Console.ReadLine();
+            Console.WriteLine("-------------");
+            foreach(var v in points.Keys.Where(k => k.x == minX || k.y == minY || k.x == maxX || k.y == maxY).ToList())
+            {
+                Console.WriteLine("Removing " + v.id);
+                points.Remove(v);
+            }
+            
+            foreach(var v in points.Keys)
+            {
+                Console.WriteLine(v.id + ": " + points[v]);
+            }
+
+            Console.WriteLine("Max: " + points.Values.Max());
         }
 
-        
+        private static Point ClosestPoint(List<Point> points, Point p, out int dist)
+        {
+            Point closest = null;
+            var minDistance = -1;
+
+            foreach(var pt in points)
+            {
+                var d = CalculateDistance(pt, p);
+
+                //same point
+                if(d == 0)
+                {
+                    dist = 0;
+                    return pt;
+                }
+
+                //set baseline
+                if(minDistance == -1)
+                {
+                    minDistance = d;
+                    closest = pt;
+                }
+                //baseline already set
+                else
+                {
+                    if(d == minDistance)
+                    {
+                        closest = null;
+                    }
+                    else if(d < minDistance)
+                    {
+                        minDistance = d;
+                        closest = pt;
+                    }
+                }
+            }
+
+            dist = minDistance;
+            return closest;
+
+        }
+
+        private static int CalculateDistance(Point p1, Point p2)
+        {
+            return Math.Abs(p1.x - p2.x) + Math.Abs(p1.y - p2.y);
+        }
     }
-
-
 }
